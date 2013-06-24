@@ -1,0 +1,26 @@
+dataDir=<%= ENV['OPENSHIFT_DATA_DIR'] %>/.zookeeper/data
+dataLogDir=<%= ENV['OPENSHIFT_DATA_DIR'] %>/.zookeeper/log
+clientPort=<%= ENV['OPENSHIFT_ZOOKEEPER_PORT'] %>
+clientPortAddress=<%= ENV['OPENSHIFT_ZOOKEEPER_HOST'] %>
+
+tickTime=2000
+initLimit=5
+syncLimit=2
+autopurge.purgeInterval=4
+
+<%
+  count = 0
+  cluster = ENV['ZOOKEEPER_CLUSTER_MEMBERS'] || 
+    [
+      ENV['OPENSHIFT_GEAR_UUID'],'=',
+      ENV['OPENSHIFT_GEAR_DNS'],':',
+      ENV['OPENSHIFT_ZOOKEEPER_PROXY_PORT'],':',
+      ENV['OPENSHIFT_ZOOKEEPER_LEADER_PROXY_PORT']
+    ].join
+  cluster.each_line.to_a.map do |line|
+    gear, host = line.split('=',2)
+%>
+server.<%= count += 1 %>=<%= host %>
+<%
+  end.compact
+%>

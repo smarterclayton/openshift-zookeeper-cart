@@ -1,0 +1,35 @@
+Name: zookeeper
+Cartridge-Short-Name: ZOOKEEPER
+Display-Name: ZooKeeper
+Version: "3.4"
+Website: https://github.com/smarterclayton/openshift-zookeeper-cart
+Cartridge-Version: 0.0.1
+Cartridge-Vendor: smarterclayton
+Categories:
+  - service
+  - database
+  - embedded
+Provides:
+  - zookeeper-3
+  - zookeeper
+Scaling:
+  Min: 1
+  Max: -1
+Endpoints:
+  - Private-IP-Name:   HOST
+    Private-Port-Name: PORT
+    Private-Port:      16379
+    Public-Port-Name:  PROXY_PORT
+  - Private-IP-Name:   LEADER_HOST
+    Private-Port-Name: LEADER_PORT
+    Private-Port:      26379
+    Public-Port-Name:  LEADER_PROXY_PORT
+Subscribes:
+  set-zookeeper-connection-info:
+    Type: "ENV:NET_TCP:db:zookeeper:connection-info-v1"
+    Required: false
+Publishes:
+  publish-db-connection-info:
+    Type: "ENV:NET_TCP:db:connection-info"
+  publish-zookeeper-connection-info:
+    Type: "ENV:NET_TCP:db:zookeeper:connection-info-v1"

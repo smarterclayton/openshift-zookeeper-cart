@@ -1,0 +1,106 @@
+#!/bin/bash
+
+base=$(pwd)
+src=$base/versions/zookeeper-$ZOOKEEPER_VERSION
+cfg=$base/tmp/zoo.cfg
+export ZOO_LOG_DIR=$base/logs
+
+if [ -n $ZOOKEEPER_PASSWORD ]; then
+    CLI_AUTH="-a $ZOOKEEPER_PASSWORD"
+fi
+
+function zkctl() {
+    erb conf/zoo.cfg.erb > tmp/zoo.cfg
+    erb conf/log4j.properties.erb > tmp/log4j.properties
+    echo $ZOOKEEPER_CLUSTER_ID > $OPENSHIFT_DATA_DIR/.zookeeper/data/myid
+    (cd tmp; $src/bin/zkServer.sh $1 $cfg)
+}
+
+function status() {
+    zkctl status
+}
+
+function update() {
+    echo
+}
+
+function start() {
+    zkctl start
+}
+
+function stop() {
+    zkctl stop
+}
+
+function restart() {
+    zkctl restart
+}
+
+function use-source() {
+    if ! [ $# -gt 0 ]; then
+        echo "Usage: $0 git-repository-url [commit]"
+        return 1
+    fi
+    stop
+    set -e
+    mkdir -p $TMP/_env/
+    rm -rf $TMP/_env/*
+    cp env/* $TMP/_env/
+    rm -rf .??* *
+    if [ -n $2 ]; then
+        echo "Switching to using source from $1, commit $2"
+        git clone $1 -b $2 .
+    else
+        echo "Switching to using source from $1"
+        git clone $1 .
+    fi
+    mkdir -p env
+    cp $TMP/_env/* env/
+    rm -rf $TMP/_env
+    
+    bin/setup
+}
+
+function build() {
+    echo
+}
+
+function post-deploy() {
+    echo
+}
+
+function pre-build() {
+    echo
+}
+
+function tidy() {
+    echo
+}
+
+#
+#  main():
+#
+
+# Ensure arguments.
+if ! [ $# -gt 0 ]; then
+    echo "Usage: $0 [start|restart|graceful|graceful-stop|stop|status|update|use-source]"
+    exit 1
+fi
+
+# Source utility functions.
+source $OPENSHIFT_CARTRIDGE_SDK_BASH
+
+# Handle commands.
+case "$1" in
+    start)               start       ;;
+    restart|graceful)    restart     ;;
+    graceful-stop|stop)  stop        ;;
+    status)              status      ;;
+    build)               build       ;;
+    pre-build)           pre-build   ;;
+    post-deploy)         post-deploy ;;
+    tidy)                tidy        ;;
+    update)              update      ;;
+    use-source)          use-source  $2 $3 ;;
+    *)
+esac

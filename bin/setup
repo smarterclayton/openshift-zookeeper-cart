@@ -1,0 +1,39 @@
+#!/bin/bash -e
+
+set -u
+
+source $OPENSHIFT_CARTRIDGE_SDK_BASH
+
+for dir in logs pid tmp env versions; do
+	mkdir -p $dir
+done
+
+version=${ZOOKEEPER_VERSION:-3.4.5}
+echo $version > env/ZOOKEEPER_VERSION
+if ! [ -d versions/$version ]; then
+  url=http://www.poolsaboveground.com/apache/zookeeper/zookeeper-$version/zookeeper-$version.tar.gz
+  pushd versions
+  curl $url | tar -xvz
+  client_result "Downloaded version $version from $url"
+
+  # ZooKeeper doesn't correctly check clientPort/clientPortAddress for status
+  sed -i zookeeper-$version/bin/zkServer.sh -e 's/clientPort"/clientPort="/'  
+  sed -i zookeeper-$version/bin/zkServer.sh -e 's/localhost/$OPENSHIFT_ZOOKEEPER_HOST/'  
+  popd
+fi
+
+echo INFO,ROLLINGFILE > env/ZOO_LOG4J_PROP
+
+# Disable JMX by default
+echo true > env/JMXDISABLE
+
+mkdir -p $OPENSHIFT_DATA_DIR/.zookeeper/data
+mkdir -p $OPENSHIFT_DATA_DIR/.zookeeper/log
+
+if ! [ ${ZOOKEEPER_PASSWORD+x} ]; then
+  cat /dev/urandom | head -c${1:-32} | sha256sum | base64 | head -c 40 > env/ZOOKEEPER_PASSWORD
+  client_result "ZooKeeper is now configured with a default password $(cat env/ZOOKEEPER_PASSWORD)"
+fi
+
+client_result "You can configure various ZooKeeper persistence config by setting"
+client_result "environment variables - consult the cartridge README for more info."
