@@ -10,13 +10,26 @@ autopurge.purgeInterval=4
 
 <%
   count = 0
-  cluster = ENV['ZOOKEEPER_CLUSTER_MEMBERS'] || 
-    [
-      ENV['OPENSHIFT_GEAR_UUID'],'=',
-      ENV['OPENSHIFT_GEAR_DNS'],':',
-      ENV['OPENSHIFT_ZOOKEEPER_PROXY_PORT'],':',
-      ENV['OPENSHIFT_ZOOKEEPER_LEADER_PROXY_PORT']
-    ].join
+  if ENV['OPENSHIFT_ZOOKEEPER_PROXY_PORT'] and ENV['OPENSHIFT_ZOOKEEPER_LEADER_PROXY_PORT']
+    # scalable
+    cluster = cluster ||
+      [
+        ENV['OPENSHIFT_GEAR_UUID'],'=',
+        ENV['OPENSHIFT_GEAR_DNS'],':',
+        ENV['OPENSHIFT_ZOOKEEPER_PROXY_PORT'],':',
+        ENV['OPENSHIFT_ZOOKEEPER_LEADER_PROXY_PORT']
+      ].join
+  else
+    # not scalable
+    cluster = cluster ||
+      [
+        ENV['OPENSHIFT_GEAR_UUID'],'=',
+        ENV['OPENSHIFT_ZOOKEEPER_HOST'],':',
+        ENV['OPENSHIFT_ZOOKEEPER_PORT'],':',
+        ENV['OPENSHIFT_ZOOKEEPER_LEADER_PORT']
+      ].join
+  end
+
   cluster.each_line.to_a.map do |line|
     gear, host = line.split('=',2)
 %>
